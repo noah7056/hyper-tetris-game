@@ -35,7 +35,7 @@ const checkCollision = (
   return false;
 };
 
-export const useGameLogic = () => {
+export const useGameLogic = (useExtraShapes: boolean) => {
   const [stage, setStage] = useState<BoardShape>(createStage());
   const [rowsCleared, setRowsCleared] = useState(0);
   const [score, setScore] = useState(0);
@@ -60,7 +60,7 @@ export const useGameLogic = () => {
   }, []);
 
   // Next Piece State
-  const [nextTetromino, setNextTetromino] = useState<Tetromino>(randomTetromino());
+  const [nextTetromino, setNextTetromino] = useState<Tetromino>(randomTetromino(useExtraShapes));
 
   const [player, setPlayer] = useState<Player>({
     pos: { x: 0, y: 0 },
@@ -68,12 +68,12 @@ export const useGameLogic = () => {
     collided: false,
   });
 
-  const resetGame = useCallback(() => {
+  const resetGame = useCallback((startLevel = 0) => {
     setStage(createStage());
     setGameOver(false);
     setScore(0);
     setRowsCleared(0);
-    setLevel(0);
+    setLevel(startLevel);
     setClearedRowsIndices([]);
     setIsTetris(false);
     setGameState(GameState.PLAYING);
@@ -82,11 +82,11 @@ export const useGameLogic = () => {
     // Initialize pieces
     setPlayer({
       pos: { x: BOARD_WIDTH / 2 - 2, y: 0 },
-      tetromino: randomTetromino(),
+      tetromino: randomTetromino(useExtraShapes),
       collided: false,
     });
-    setNextTetromino(randomTetromino());
-  }, []);
+    setNextTetromino(randomTetromino(useExtraShapes));
+  }, [useExtraShapes]);
 
   const movePlayer = (dir: number) => {
     if (player.collided) return; // Prevent moving if already locked
@@ -185,8 +185,8 @@ export const useGameLogic = () => {
       tetromino: nextTetromino, // Use the previewed piece
       collided: false,
     });
-    setNextTetromino(randomTetromino()); // Generate a new preview
-  }, [nextTetromino]);
+    setNextTetromino(randomTetromino(useExtraShapes)); // Generate a new preview
+  }, [nextTetromino, useExtraShapes]);
 
   // This function updates the board when a piece lands
   const updateStage = (prevStage: BoardShape) => {
@@ -323,6 +323,6 @@ export const useGameLogic = () => {
     clearedRowsIndices,
     isTetris,
     ghostY,
-    lastEvent // Export for effects
+    lastEvent
   };
 };

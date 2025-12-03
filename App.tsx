@@ -5,7 +5,7 @@ import NextPiece from './components/NextPiece';
 import EffectsLayer from './components/EffectsLayer';
 import { useGameLogic } from './hooks/useGameLogic';
 import { GameState, HighScore } from './types';
-import { ArrowLeft, ArrowRight, ArrowDown, RotateCw, Play, X, Eye, EyeOff, Grid, Sparkles, Zap, ArrowDownToLine } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowDown, RotateCw, Play, X, Eye, EyeOff, Grid, Sparkles, Zap, ArrowDownToLine, Puzzle } from 'lucide-react';
 
 // Define themes with background gradients and filter properties (hue, saturate, brightness, sepia)
 const LEVEL_THEMES = [
@@ -33,6 +33,14 @@ const StatsBox: React.FC<{ label: string; value: string | number; color?: string
 );
 
 function App() {
+  // Settings State
+  const [showGhost, setShowGhost] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
+  const [showParticles, setShowParticles] = useState(true);
+  const [enableShake, setEnableShake] = useState(true);
+  const [enableHardDropShake, setEnableHardDropShake] = useState(true);
+  const [useExtraShapes, setUseExtraShapes] = useState(false);
+
   const {
     stage,
     player,
@@ -52,19 +60,16 @@ function App() {
     isTetris,
     ghostY,
     lastEvent
-  } = useGameLogic();
+  } = useGameLogic(useExtraShapes);
 
   // High Scores State
   const [highScores, setHighScores] = useState<HighScore[]>([]);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const gameOverProcessed = useRef(false);
-
-  // Settings State
-  const [showGhost, setShowGhost] = useState(true);
-  const [showGrid, setShowGrid] = useState(true);
-  const [showParticles, setShowParticles] = useState(true);
-  const [enableShake, setEnableShake] = useState(true);
-  const [enableHardDropShake, setEnableHardDropShake] = useState(true);
+  
+  // Start Level State
+  const [startLevel, setStartLevel] = useState(0);
+  const currentSessionStartLevel = useRef(0);
   
   const [showOptions, setShowOptions] = useState(false);
 
@@ -118,8 +123,11 @@ function App() {
     if (gameState === GameState.GAME_OVER && !gameOverProcessed.current) {
       gameOverProcessed.current = true;
       const lowestScore = highScores.length < 5 ? 0 : highScores[highScores.length - 1].score;
-      // Only allow high scores if > 0
-      if (score > 0 && (score > lowestScore || highScores.length < 5)) {
+      
+      // Only allow high scores if > 0 AND the game started at level 0
+      const isEligible = score > 0 && currentSessionStartLevel.current === 0;
+
+      if (isEligible && (score > lowestScore || highScores.length < 5)) {
         setIsNewHighScore(true);
       }
     } else if (gameState !== GameState.GAME_OVER) {
@@ -137,11 +145,13 @@ function App() {
     setHighScores(newScores);
     localStorage.setItem('tetris_highscores', JSON.stringify(newScores));
     setIsNewHighScore(false);
-    setGameState(GameState.MENU);
+    // Stay in GAME_OVER to show leaderboard/try again, instead of going to MENU
   };
 
-  const handleStart = () => {
-    resetGame();
+  const handleStart = (levelOverride?: number) => {
+    const effectiveStartLevel = levelOverride ?? startLevel;
+    currentSessionStartLevel.current = effectiveStartLevel;
+    resetGame(effectiveStartLevel);
     // Focus the board or body to capture keys immediately
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
@@ -177,7 +187,9 @@ function App() {
     return () => window.removeEventListener('keydown', listener);
   }, [handleKeyDown]);
 
-  const currentTheme = LEVEL_THEMES[level % LEVEL_THEMES.length];
+  // Use startLevel for theme preview in Menu, otherwise use actual game level
+  const themeLevel = gameState === GameState.MENU ? startLevel : level;
+  const currentTheme = LEVEL_THEMES[themeLevel % LEVEL_THEMES.length];
 
   return (
     <div 
@@ -195,6 +207,9 @@ function App() {
           highScores={highScores}
           isNewHighScore={isNewHighScore}
           onSubmitHighScore={handleSubmitScore}
+          startLevel={startLevel}
+          onSetStartLevel={setStartLevel}
+          lastSessionLevel={currentSessionStartLevel.current}
         />
       )}
 
@@ -237,6 +252,21 @@ function App() {
                   className={`px-4 py-2 rounded font-bold font-retro text-xs transition-all ${showGrid ? 'bg-pink-600 text-white shadow-[0_0_10px_rgba(219,39,119,0.5)]' : 'bg-slate-700 text-slate-400'}`}
                 >
                   {showGrid ? 'ON' : 'OFF'}
+                </div>
+              </button>
+              
+              <button 
+                onClick={() => setUseExtraShapes(!useExtraShapes)}
+                className="w-full flex items-center justify-between group p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-white/5 cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                   <Puzzle className={useExtraShapes ? "text-emerald-400" : "text-slate-500"} />
+                  <span className="font-mono text-sm text-white">Extra Shapes</span>
+                </div>
+                <div 
+                  className={`px-4 py-2 rounded font-bold font-retro text-xs transition-all ${useExtraShapes ? 'bg-emerald-600 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-slate-700 text-slate-400'}`}
+                >
+                  {useExtraShapes ? 'ON' : 'OFF'}
                 </div>
               </button>
 

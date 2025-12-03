@@ -68,11 +68,31 @@ export const TETROMINOS: Record<string, Tetromino> = {
     ],
     color: '0, 100, 180', // Dark Ocean
   },
+  // New Shapes (Trominoes)
+  I3: {
+    type: TetrominoType.I3,
+    shape: [
+      [0, 0, 0],
+      [TetrominoType.I3, TetrominoType.I3, TetrominoType.I3],
+      [0, 0, 0],
+    ],
+    color: '255, 100, 100', // Light Red (3-in-a-row)
+  },
+  L3: {
+    type: TetrominoType.L3,
+    shape: [
+      [TetrominoType.L3, TetrominoType.L3],
+      [TetrominoType.L3, 0],
+    ],
+    color: '255, 0, 255', // Magenta (Corner shape)
+  },
 };
 
-export const randomTetromino = (): Tetromino => {
-  const tetrominos = 'IJLOSTZ';
-  const randTetromino =
-    tetrominos[Math.floor(Math.random() * tetrominos.length)];
-  return TETROMINOS[randTetromino];
+export const randomTetromino = (includeExtra = false): Tetromino => {
+  const keys = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
+  if (includeExtra) {
+    keys.push('I3', 'L3');
+  }
+  const randKey = keys[Math.floor(Math.random() * keys.length)];
+  return TETROMINOS[randKey];
 };

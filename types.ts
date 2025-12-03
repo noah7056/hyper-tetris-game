@@ -6,6 +6,8 @@ export enum TetrominoType {
   S = 'S',
   T = 'T',
   Z = 'Z',
+  I3 = 'I3',
+  L3 = 'L3',
 }
 
 export type TetrominoShape = (TetrominoType | 0)[][];
